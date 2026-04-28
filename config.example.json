@@ -1,0 +1,13 @@
+{
+  "targetPhone": "56912345678",
+  "provider": "anthropic",
+  "apiKey": "sk-ant-...",
+  "apiBaseUrl": "",
+  "model": "claude-sonnet-4-6",
+  "targetLanguage": "english",
+  "explanationLanguage": "spanish",
+  "tolerancePercent": 30,
+  "acknowledgeCorrect": false,
+  "enabled": true,
+  "serverPort": 3000
+}

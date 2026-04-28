@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config.json:/app/config.json
+      - wwebjs_auth:/app/.wwebjs_auth
+    restart: unless-stopped
+
+volumes:
+  wwebjs_auth:

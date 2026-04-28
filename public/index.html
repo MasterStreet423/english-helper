@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Language Helper</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222536;
+    --border: #2e3148;
+    --accent: #6c63ff;
+    --accent-soft: #3d3872;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --text-muted: #8892a4;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  h1 { font-size: 1.6rem; font-weight: 700; }
+  h2 { font-size: 1rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+  h3 { font-size: 0.95rem; font-weight: 600; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .badge.connected { border-color: var(--green); color: var(--green); }
+  .badge.disconnected { border-color: var(--red); color: var(--red); }
+  .badge.enabled { border-color: var(--accent); color: var(--accent); }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  /* Connection card */
+  .qr-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+  }
+  #qr-image {
+    width: 200px; height: 200px;
+    border-radius: 8px;
+    border: 3px solid var(--accent);
+    background: #fff;
+  }
+  .qr-hint { font-size: 0.8rem; color: var(--text-muted); text-align: center; }
+
+  .connected-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem 0;
+    color: var(--green);
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .connected-state .icon { font-size: 2.5rem; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--border); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #7c75ff; }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: #2a1515; }
+
+  /* Language toggle */
+  .lang-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .lang-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-btn.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .lang-btn:not(.active):hover { background: var(--surface2); color: var(--text); }
+
+  /* Config form */
+  .form-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .field label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+
+  input[type="text"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+  .range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+  .range-val {
+    width: 42px;
+    text-align: right;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: -0.25rem;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .toggle-row label { font-size: 0.875rem; color: var(--text); }
+  .toggle {
+    position: relative;
+    width: 40px; height: 22px;
+    cursor: pointer;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--border);
+    border-radius: 11px;
+    transition: background 0.2s;
+  }
+  .toggle input:checked ~ .toggle-track { background: var(--accent); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked ~ .toggle-track .toggle-thumb { transform: translateX(18px); }
+
+  .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+
+  /* Corrections log */
+  #corrections-list {
+    max-height: 480px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .correction-entry {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--border);
+    animation: slideIn 0.2s ease;
+  }
+  .correction-entry.has-error { border-left-color: var(--red); }
+  .correction-entry.correct { border-left-color: var(--green); }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .entry-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .entry-header time { font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+
+  .pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: var(--surface2);
+  }
+  .pill.me { color: var(--accent); }
+  .pill.them { color: var(--yellow); }
+  .pill.error { background: #2a1212; color: var(--red); }
+  .pill.ok { background: #122a1a; color: var(--green); }
+  .pill.sent { background: var(--accent-soft); color: var(--accent); }
+
+  .severity-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+  .severity-bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .severity-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--red);
+    transition: width 0.3s;
+  }
+  .severity-val { font-size: 0.75rem; color: var(--text-muted); width: 30px; text-align: right; }
+
+  .entry-original { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+  .entry-corrected { font-size: 0.875rem; color: var(--text); font-weight: 500; }
+  .entry-explanation { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; font-style: italic; }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  /* Logs */
+  #log-list {
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .log-line .lt { color: var(--surface2); margin-right: 0.5rem; }
+  .log-line.err .lm { color: var(--red); }
+  .log-line.ok .lm { color: var(--green); }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .hidden { display: none !important; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .text-muted { color: var(--text-muted); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="app-title">🎓 Language Helper</h1>
+  <span class="badge disconnected" id="wa-badge"><span class="dot"></span> <span data-i18n="disconnected"></span></span>
+  <span class="badge enabled hidden" id="enabled-badge" data-i18n="active"></span>
+  <span style="margin-left: auto; display:flex; align-items:center; gap:0.75rem;">
+    <div class="lang-toggle">
+      <button class="lang-btn" id="lang-es" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="btn danger" onclick="restart()" data-i18n="reconnect"></button>
+  </span>
+</div>
+
+<div class="grid">
+
+  <!-- Connection card -->
+  <div class="card">
+    <h2 data-i18n="whatsapp"></h2>
+    <div id="qr-section" class="qr-wrap">
+      <img id="qr-image" src="" alt="QR Code">
+      <p class="qr-hint" data-i18n="qr-hint"></p>
+    </div>
+    <div id="connected-section" class="connected-state hidden">
+      <span class="icon">✅</span>
+      <span data-i18n="connected"></span>
+      <span id="wa-number" class="text-muted"></span>
+    </div>
+  </div>
+
+  <!-- Config card -->
+  <div class="card">
+    <h2 data-i18n="configuration"></h2>
+    <form id="config-form" class="form-grid" onsubmit="saveConfig(event)">
+
+      <div class="toggle-row">
+        <label data-i18n="enable-corrections"></label>
+        <label class="toggle">
+          <input type="checkbox" name="enabled" id="cfg-enabled">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <label data-i18n="target-phone"></label>
+        <input type="text" name="targetPhone" id="cfg-phone" placeholder="e.g. 56912345678">
+      </div>
+
+      <div class="field">
+        <label data-i18n="target-language"></label>
+        <select name="targetLanguage" id="cfg-target-lang" onchange="onTargetLangChange()"></select>
+      </div>
+
+      <div class="field">
+        <label data-i18n="explanation-language"></label>
+        <select name="explanationLanguage" id="cfg-expl-lang"></select>
+      </div>
+
+      <div class="field">
+        <label data-i18n="llm-provider"></label>
+        <select name="provider" id="cfg-provider" onchange="onProviderChange()">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI</option>
+          <option value="custom" data-i18n-opt="custom-provider"></option>
+        </select>
+      </div>
+
+      <div class="field" id="field-baseurl" style="display:none">
+        <label data-i18n="api-base-url"></label>
+        <input type="text" name="apiBaseUrl" id="cfg-baseurl" placeholder="https://your-api/v1">
+      </div>
+
+      <div class="field">
+        <label data-i18n="api-key"></label>
+        <input type="password" name="apiKey" id="cfg-apikey" placeholder="sk-...">
+      </div>
+
+      <div class="field">
+        <label data-i18n="model"></label>
+        <input type="text" name="model" id="cfg-model" placeholder="claude-sonnet-4-6">
+      </div>
+
+      <div class="field">
+        <label data-i18n="tolerance-label"></label>
+        <div class="range-wrap">
+          <input type="range" name="tolerancePercent" id="cfg-tolerance" min="0" max="100" step="5"
+            oninput="document.getElementById('tolerance-val').textContent = this.value + '%'">
+          <span class="range-val" id="tolerance-val">30%</span>
+        </div>
+        <div class="range-labels">
+          <span data-i18n="tolerance-min"></span>
+          <span data-i18n="tolerance-max"></span>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label data-i18n="acknowledge-correct"></label>
+        <label class="toggle">
+          <input type="checkbox" name="acknowledgeCorrect" id="cfg-ack">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field">
+        <label data-i18n="server-port"></label>
+        <input type="number" name="serverPort" id="cfg-port" min="1024" max="65535">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn primary" data-i18n="save"></button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<!-- Corrections log -->
+<div class="card" style="margin-bottom: 1.25rem;">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 1rem;">
+    <h2 style="margin:0;" data-i18n="corrections-log"></h2>
+    <button class="btn" onclick="clearCorrections()" data-i18n="clear"></button>
+  </div>
+  <div id="corrections-list">
+    <div class="empty-state" data-i18n="no-corrections"></div>
+  </div>
+</div>
+
+<!-- System logs -->
+<div class="card">
+  <h2 data-i18n="system-logs"></h2>
+  <div id="log-list"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ── Translations ──────────────────────────────────────────────────────────────
+
+// Language options for the target/explanation selectors
+// Labels are in the language itself so users recognize their own language
+const LANGUAGES = [
+  { id: 'english',    label: 'English' },
+  { id: 'spanish',    label: 'Español' },
+  { id: 'french',     label: 'Français' },
+  { id: 'german',     label: 'Deutsch' },
+  { id: 'portuguese', label: 'Português' },
+  { id: 'italian',    label: 'Italiano' },
+  { id: 'japanese',   label: '日本語' },
+  { id: 'chinese',    label: '中文' },
+  { id: 'korean',     label: '한국어' },
+  { id: 'dutch',      label: 'Nederlands' },
+  { id: 'russian',    label: 'Русский' },
+];
+
+// Display name used in the dynamic app title (h1)
+const LANG_DISPLAY = {
+  english:    { en: 'English',    es: 'Inglés' },
+  spanish:    { en: 'Spanish',    es: 'Español' },
+  french:     { en: 'French',     es: 'Francés' },
+  german:     { en: 'German',     es: 'Alemán' },
+  portuguese: { en: 'Portuguese', es: 'Portugués' },
+  italian:    { en: 'Italian',    es: 'Italiano' },
+  japanese:   { en: 'Japanese',   es: 'Japonés' },
+  chinese:    { en: 'Chinese',    es: 'Chino' },
+  korean:     { en: 'Korean',     es: 'Coreano' },
+  dutch:      { en: 'Dutch',      es: 'Holandés' },
+  russian:    { en: 'Russian',    es: 'Ruso' },
+};
+
+const TRANSLATIONS = {
+  es: {
+    'disconnected': 'Desconectado',
+    'connected': 'Conectado',
+    'active': 'Activo',
+    'reconnect': '↺ Reconectar',
+    'whatsapp': 'WhatsApp',
+    'qr-hint': 'Abre WhatsApp → Dispositivos vinculados\n→ Vincular dispositivo y escanea',
+    'configuration': 'Configuración',
+    'enable-corrections': 'Activar correcciones',
+    'target-phone': 'Número destino (con código de país)',
+    'target-language': 'Idioma a corregir',
+    'explanation-language': 'Idioma de las explicaciones',
+    'llm-provider': 'Proveedor LLM',
+    'custom-provider': 'Personalizado (compatible con OpenAI)',
+    'api-base-url': 'URL base de la API',
+    'api-key': 'Clave API',
+    'model': 'Modelo',
+    'tolerance-label': 'Umbral de corrección (tolerancia)',
+    'tolerance-min': '0% — corregir todo',
+    'tolerance-max': '100% — nunca corregir',
+    'acknowledge-correct': 'Confirmar mensajes correctos',
+    'server-port': 'Puerto del servidor (requiere reinicio)',
+    'save': '💾 Guardar',
+    'saved': '✓ Guardado',
+    'corrections-log': 'Historial de correcciones',
+    'clear': 'Limpiar',
+    'no-corrections': 'Sin correcciones aún — envía un mensaje para empezar a practicar',
+    'system-logs': 'Registros del sistema',
+    'from-me': 'Yo',
+    'from-them': 'Ellos',
+    'correct-pill': '✓ Correcto',
+    'sent-pill': 'Corrección enviada',
+  },
+  en: {
+    'disconnected': 'Disconnected',
+    'connected': 'Connected',
+    'active': 'Active',
+    'reconnect': '↺ Reconnect',
+    'whatsapp': 'WhatsApp',
+    'qr-hint': 'Open WhatsApp → Linked Devices\n→ Link a Device and scan',
+    'configuration': 'Configuration',
+    'enable-corrections': 'Enable corrections',
+    'target-phone': 'Target phone number (with country code)',
+    'target-language': 'Language to correct',
+    'explanation-language': 'Explanation language',
+    'llm-provider': 'LLM Provider',
+    'custom-provider': 'Custom (OpenAI-compatible)',
+    'api-base-url': 'API Base URL',
+    'api-key': 'API Key',
+    'model': 'Model',
+    'tolerance-label': 'Correction threshold (tolerance)',
+    'tolerance-min': '0% — correct everything',
+    'tolerance-max': '100% — never correct',
+    'acknowledge-correct': 'Acknowledge correct messages',
+    'server-port': 'Server port (requires restart)',
+    'save': '💾 Save',
+    'saved': '✓ Saved',
+    'corrections-log': 'Corrections Log',
+    'clear': 'Clear',
+    'no-corrections': 'No corrections yet — send a message to start practicing',
+    'system-logs': 'System Logs',
+    'from-me': 'Me',
+    'from-them': 'Them',
+    'correct-pill': '✓ Correct',
+    'sent-pill': 'Correction sent',
+  }
+};
+
+let currentLang = localStorage.getItem('lang') || 'es';
+
+function t(key) {
+  return TRANSLATIONS[currentLang][key] || TRANSLATIONS['en'][key] || key;
+}
+
+function buildLanguageOptions(selectId, selectedValue) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = LANGUAGES.map(l =>
+    `<option value="${l.id}"${l.id === selectedValue ? ' selected' : ''}>${l.label}</option>`
+  ).join('');
+}
+
+function updateAppTitle(targetLanguage) {
+  const name = (LANG_DISPLAY[targetLanguage] || {})[currentLang] || targetLanguage;
+  const title = `🎓 ${name} Helper`;
+  document.getElementById('app-title').textContent = title;
+  document.title = `${name} Helper`;
+}
+
+function onTargetLangChange() {
+  const lang = document.getElementById('cfg-target-lang').value;
+  updateAppTitle(lang);
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('lang', lang);
+  document.documentElement.lang = lang;
+
+  document.getElementById('lang-es').classList.toggle('active', lang === 'es');
+  document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    el.textContent = t(el.dataset.i18nOpt);
+  });
+
+  // Refresh title in case language display names changed
+  const targetLang = document.getElementById('cfg-target-lang').value || 'english';
+  updateAppTitle(targetLang);
+
+  renderCorrections();
+}
+
+// ── Socket.io ─────────────────────────────────────────────────────────────────
+
+const socket = io();
+let corrections = [];
+
+socket.on('config', applyConfig);
+
+socket.on('status', ({ connected, qr }) => {
+  const badge = document.getElementById('wa-badge');
+  const qrSec = document.getElementById('qr-section');
+  const connSec = document.getElementById('connected-section');
+  const qrImg = document.getElementById('qr-image');
+
+  if (connected) {
+    badge.className = 'badge connected';
+    badge.innerHTML = `<span class="dot"></span> <span data-i18n="connected">${t('connected')}</span>`;
+    qrSec.classList.add('hidden');
+    connSec.classList.remove('hidden');
+  } else {
+    badge.className = 'badge disconnected';
+    badge.innerHTML = `<span class="dot"></span> <span data-i18n="disconnected">${t('disconnected')}</span>`;
+    connSec.classList.add('hidden');
+    if (qr) {
+      qrImg.src = qr;
+      qrSec.classList.remove('hidden');
+    }
+  }
+});
+
+socket.on('correction', (entry) => {
+  corrections.unshift(entry);
+  if (corrections.length > 100) corrections.pop();
+  renderCorrections();
+});
+
+socket.on('corrections', (list) => {
+  corrections = list;
+  renderCorrections();
+});
+
+socket.on('log', (entry) => addLogLine(entry));
+
+socket.on('logs', (list) => {
+  const el = document.getElementById('log-list');
+  el.innerHTML = '';
+  list.slice().reverse().forEach(addLogLine);
+});
+
+// ── Config form ───────────────────────────────────────────────────────────────
+
+function applyConfig(cfg) {
+  document.getElementById('cfg-enabled').checked = !!cfg.enabled;
+  document.getElementById('cfg-phone').value = cfg.targetPhone || '';
+
+  buildLanguageOptions('cfg-target-lang', cfg.targetLanguage || 'english');
+  buildLanguageOptions('cfg-expl-lang', cfg.explanationLanguage || 'spanish');
+  updateAppTitle(cfg.targetLanguage || 'english');
+
+  document.getElementById('cfg-provider').value = cfg.provider || 'anthropic';
+  document.getElementById('cfg-apikey').value = cfg.apiKey || '';
+  document.getElementById('cfg-baseurl').value = cfg.apiBaseUrl || '';
+  document.getElementById('cfg-model').value = cfg.model || '';
+  document.getElementById('cfg-port').value = cfg.serverPort || 3000;
+
+  const tol = cfg.tolerancePercent ?? 30;
+  document.getElementById('cfg-tolerance').value = tol;
+  document.getElementById('tolerance-val').textContent = tol + '%';
+
+  document.getElementById('cfg-ack').checked = !!cfg.acknowledgeCorrect;
+
+  onProviderChange();
+
+  const enabledBadge = document.getElementById('enabled-badge');
+  if (cfg.enabled) enabledBadge.classList.remove('hidden');
+  else enabledBadge.classList.add('hidden');
+}
+
+function onProviderChange() {
+  const provider = document.getElementById('cfg-provider').value;
+  const baseUrlField = document.getElementById('field-baseurl');
+  const modelInput = document.getElementById('cfg-model');
+
+  baseUrlField.style.display = provider === 'custom' ? 'flex' : 'none';
+
+  if (!modelInput.value) {
+    if (provider === 'anthropic') modelInput.placeholder = 'claude-sonnet-4-6';
+    else if (provider === 'openai') modelInput.placeholder = 'gpt-4o-mini';
+    else modelInput.placeholder = 'model-name';
+  }
+}
+
+async function saveConfig(event) {
+  event.preventDefault();
+  const form = document.getElementById('config-form');
+  const data = Object.fromEntries(new FormData(form));
+
+  data.enabled = document.getElementById('cfg-enabled').checked;
+  data.acknowledgeCorrect = document.getElementById('cfg-ack').checked;
+  data.tolerancePercent = parseInt(data.tolerancePercent, 10);
+  data.serverPort = parseInt(data.serverPort, 10);
+
+  const res = await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (json.ok) {
+    applyConfig(json.config);
+    flashBtn(event.submitter, t('saved'));
+  }
+}
+
+function flashBtn(btn, msg) {
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+}
+
+async function restart() {
+  await fetch('/api/restart', { method: 'POST' });
+}
+
+function clearCorrections() {
+  corrections = [];
+  renderCorrections();
+}
+
+// ── Corrections render ─────────────────────────────────────────────────────────
+
+function renderCorrections() {
+  const el = document.getElementById('corrections-list');
+  if (corrections.length === 0) {
+    el.innerHTML = `<div class="empty-state">${t('no-corrections')}</div>`;
+    return;
+  }
+  el.innerHTML = corrections.map(renderEntry).join('');
+}
+
+function renderEntry(e) {
+  const dt = new Date(e.timestamp);
+  const timeStr = dt.toLocaleTimeString(currentLang === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const fromPill = `<span class="pill ${e.from}">${e.from === 'me' ? t('from-me') : t('from-them')}</span>`;
+  const statusPill = e.hasError
+    ? `<span class="pill error">Error ${e.severity}%</span>`
+    : `<span class="pill ok">${t('correct-pill')}</span>`;
+  const sentPill = e.correctionSent ? `<span class="pill sent">${t('sent-pill')}</span>` : '';
+
+  const severityBar = e.hasError ? `
+    <div class="severity-bar">
+      <div class="severity-bar-track">
+        <div class="severity-bar-fill" style="width:${e.severity}%; background:${severityColor(e.severity)}"></div>
+      </div>
+      <span class="severity-val">${e.severity}%</span>
+    </div>` : '';
+
+  const corrected = e.hasError
+    ? `<div class="entry-corrected">→ ${escHtml(e.corrected)}</div>`
+    : '';
+
+  const explanation = e.explanation
+    ? `<div class="entry-explanation">${escHtml(e.explanation)}</div>`
+    : '';
+
+  return `<div class="correction-entry ${e.hasError ? 'has-error' : 'correct'}">
+    <div class="entry-header">
+      ${fromPill} ${statusPill} ${sentPill}
+      <time>${timeStr}</time>
+    </div>
+    ${severityBar}
+    <div class="entry-original">${escHtml(e.original)}</div>
+    ${corrected}
+    ${explanation}
+  </div>`;
+}
+
+function severityColor(s) {
+  if (s < 30) return '#f59e0b';
+  if (s < 60) return '#f97316';
+  return '#ef4444';
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Log render ────────────────────────────────────────────────────────────────
+
+function addLogLine(entry) {
+  const el = document.getElementById('log-list');
+  const isErr = entry.msg.includes('[Error]');
+  const isOk = entry.msg.includes('ready') || entry.msg.includes('Connected');
+  const t_str = new Date(entry.t).toLocaleTimeString(currentLang === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const div = document.createElement('div');
+  div.className = `log-line${isErr ? ' err' : isOk ? ' ok' : ''}`;
+  div.innerHTML = `<span class="lt">${t_str}</span><span class="lm">${escHtml(entry.msg)}</span>`;
+  el.insertBefore(div, el.firstChild);
+  while (el.children.length > 100) el.removeChild(el.lastChild);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+setLang(currentLang);
+</script>
+</body>
+</html>
